@@ -56,7 +56,7 @@ At boot, Pkathamo uses `storage/cache/config.php` when it exists. Otherwise it l
 After changing `.env` or a cached config file:
 
 ```bash
-php bin/cache-config.php
+php art cache:config
 ```
 
 ## Files excluded from the configuration cache

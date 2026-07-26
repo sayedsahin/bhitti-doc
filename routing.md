@@ -78,7 +78,7 @@ storage/cache/route.cache
 Rebuild before deployment:
 
 ```bash
-php bin/cache-route.php
+php art cache:route
 ```
 
 Do not package a route cache generated on another release or machine.

@@ -5,7 +5,7 @@
 Configuration is cached. Rebuild it:
 
 ```bash
-php bin/cache-config.php
+php art cache:config
 ```
 
 Or remove `storage/cache/config.php` and let the next bootstrap rebuild it.
@@ -13,7 +13,7 @@ Or remove `storage/cache/config.php` and let the next bootstrap rebuild it.
 ## New or changed routes do not appear
 
 ```bash
-php bin/cache-route.php
+php art cache:route
 ```
 
 In development, enable debug mode to disable route cache.

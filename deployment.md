@@ -24,8 +24,8 @@ composer install --no-dev --optimize-autoloader
 ## Cache commands
 
 ```bash
-php bin/cache-config.php
-php bin/cache-route.php
+php art cache:config
+php art cache:route
 ```
 
 ## Apache

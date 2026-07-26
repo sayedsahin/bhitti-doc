@@ -3,7 +3,7 @@
 ## Rebuild configuration cache
 
 ```bash
-php bin/cache-config.php
+php art cache:config
 ```
 
 This command:
@@ -18,7 +18,7 @@ Run it after changing `.env` or cached configuration.
 ## Rebuild route cache
 
 ```bash
-php bin/cache-route.php
+php art cache:route
 ```
 
 This removes the previous FastRoute cache and generates a new `storage/cache/route.cache`.

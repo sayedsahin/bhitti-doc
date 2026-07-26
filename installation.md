@@ -100,7 +100,7 @@ Do not use the built-in server as the production server.
 After changing `.env` or files in `config/`:
 
 ```bash
-php bin/cache-config.php
+php art cache:config
 ```
 
 See [Command-line tools](24-command-line-tools.md).
