@@ -1,13 +1,13 @@
 # Documentation Maintenance
 
-Update documentation in the same commit whenever a public API, default configuration, security behavior or deployment requirement changes.
+Use the current Bhitti application and framework source as the source of truth.
 
-## Release checklist
+When updating these docs:
 
-- Verify every code example against the tagged source.
-- Update configuration defaults and environment examples.
-- Document new drivers and their extension requirements.
-- Document breaking changes before release.
-- Check internal links.
-- Do not place secrets or generated caches in documentation examples.
-- Keep version-specific documentation with the matching framework tag.
+1. Verify public method names and command usage against current source.
+2. Check both framework and starter-application changes because configuration/examples often live in the app repository.
+3. Keep examples small and executable.
+4. Distinguish framework features from starter-application features (for example `Auth`, `Role`, and `flash()` are application support components).
+5. Update `upgrade-from-v0.1.0.md` only for changes that are actually present in current code.
+6. Keep `_data/navigation.yml` synchronized with added/removed pages.
+7. Run a link/filename check before publishing.

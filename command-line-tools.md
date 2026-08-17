@@ -1,57 +1,110 @@
-# Command-Line Tools
+---
+layout: default
+title: Command-line Tools
+---
 
-## Rebuild configuration cache
+# Command-line Tools
 
-```bash
-php art cache:config
-```
-
-This command:
-
-1. loads `.env`
-2. loads cacheable `config/*.php` files
-3. validates that configuration values can be exported
-4. writes `storage/cache/config.php` atomically
-
-Run it after changing `.env` or cached configuration.
-
-## Rebuild route cache
+Bhitti's CLI entry point is the root `run` script:
 
 ```bash
-php art cache:route
+php run
 ```
 
-This removes the previous FastRoute cache and generates a new `storage/cache/route.cache`.
+## Migrations
 
-Run it after changing routes for a production deployment.
-
-## Clear generated caches manually
-
-Linux/macOS:
+Create a table migration:
 
 ```bash
-rm -f storage/cache/config.php storage/cache/route.cache
+php run migrate:create users
 ```
 
-PowerShell:
+Create an alteration migration:
 
-```powershell
-Remove-Item storage/cache/config.php, storage/cache/route.cache -ErrorAction SilentlyContinue
+```bash
+php run migrate:alter users
 ```
 
-The next web bootstrap rebuilds configuration cache. FastRoute rebuilds route cache when production routing runs.
+Custom path:
 
-## APCu CLI limitation
+```bash
+php run migrate:create users --path=database/custom-migrations
+```
 
-CLI APCu is normally separate from web-server APCu and often disabled. A CLI cache clear cannot be relied on to clear PHP-FPM APCu. Use Redis or Memcached when CLI and web processes must share cache control.
+Run pending migrations:
 
-## Release process
+```bash
+php run migrate
+```
 
-Before creating a release archive:
+Named connection:
 
-1. remove `.env`
-2. remove generated configuration and route caches
-3. retain `.env.example`
-4. retain `storage/cache/README.md`
-5. run syntax checks and tests
-6. regenerate caches only on the target deployment
+```bash
+php run migrate --connection=pgsql
+```
+
+Rollback the latest batch:
+
+```bash
+php run migrate:rollback
+```
+
+Rollback a number of migrations:
+
+```bash
+php run migrate:rollback --step=2
+```
+
+Status:
+
+```bash
+php run migrate:status
+```
+
+When `APP_DEBUG=false`, migration and rollback commands require `--force`.
+
+## Seeders
+
+Create and register a seeder:
+
+```bash
+php run create:seeder users
+```
+
+Run active registered seeders:
+
+```bash
+php run db:seed
+```
+
+Run one file:
+
+```bash
+php run db:seed --filename=users
+```
+
+## Caches
+
+Configuration cache:
+
+```bash
+php run config:cache
+```
+
+Route cache:
+
+```bash
+php run route:cache
+```
+
+Clear application/generated caches:
+
+```bash
+php run cache:clear
+```
+
+`cache:clear` clears the active cache store and known file-backed/generated cache locations. APCu is process-local, so the command warns when clearing CLI APCu does not affect a separate PHP-FPM APCu process.
+
+## Application commands
+
+Application-specific command definitions live in `config/commands.php`; framework commands are registered separately by the framework's `FrameworkCommands` registry.

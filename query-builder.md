@@ -1,124 +1,86 @@
+---
+layout: default
+title: Query Builder
+---
+
 # Query Builder
 
-The Query Builder is a mutable PDO query object. Terminal methods execute the query and reset query-specific state. A model's table is preserved after reset.
+Bhitti's Query Builder keeps SQL construction small and explicit while binding values through PDO.
 
-## Start a query
-
-```php
-$users = db()->table('users')->get();
-```
+## Select
 
 ```php
-$users = User::query()->get(); //Model query
-```
-
-With connection argument
-```php
-$users = db('pgsql')->table('users')->get();
-```
-
-```php
-$users = User::query('sqlite')->get(); //Model query
-```
-
-## Select columns
-
-```php
-$users = db()->table('users')
+$users = db()
+    ->table('users')
     ->select('id', 'name', 'email')
-    ->get();
-```
-
-## WHERE conditions
-
-```php
-$user = db()->table('users')
-    ->where('email', $email)
-    ->first();
-```
-
-Operator form:
-
-```php
-$users = db()->table('users')
-    ->where('created_at', '>=', $date)
-    ->get();
-```
-
-OR condition:
-
-```php
-$user = db()->table('users')
-    ->where('username', $login)
-    ->orWhere('email', $login)
-    ->first();
-```
-
-Null conditions:
-
-```php
-->whereNull('deleted_at')
-->whereNotNull('email_verified_at')
-```
-
-LIKE:
-
-```php
-->like('name', '%John%')
-```
-
-Several equality conditions:
-
-```php
-->whereConditions([
-    'status' => 'active',
-    'role_id' => 2,
-])
-```
-
-## Raw WHERE expressions
-
-```php
-$users = db()->table('users')
-    ->whereRaw('YEAR(created_at) = ?', [2026])
-    ->get();
-```
-
-The number of `?` placeholders must equal the number of bindings. The SQL expression itself must be developer-controlled.
-
-## Joins
-
-```php
-$users = db()->table('users')
-    ->leftJoin('profiles', 'profiles.user_id', '=', 'users.id')
-    ->select('users.id', 'profiles.bio')
-    ->get();
-```
-
-Available methods:
-
-```php
-->join($table, $first, $operator, $second, $type)
-->innerJoin($table, $first, $operator, $second)
-->leftJoin($table, $first, $operator, $second)
-```
-
-## Ordering and limits
-
-```php
-$users = db()->table('users')
+    ->where('status', 'active')
     ->order('created_at DESC')
     ->limit(20)
     ->get();
 ```
 
-Offset:
+Qualified identifiers and aliases are supported:
 
 ```php
-->limit(20, 40)
+$rows = db()
+    ->table('users AS u')
+    ->select('u.id', 'u.name')
+    ->get();
 ```
 
-Order expressions must remain developer-controlled.
+## Raw select expressions
+
+Normal `select()` accepts safe identifier syntax. Use `selectRaw()` for developer-controlled SQL expressions:
+
+```php
+$total = db()
+    ->table('users')
+    ->selectRaw('COUNT(id) AS total')
+    ->first();
+```
+
+Do not pass user input to `selectRaw()`.
+
+## Conditions
+
+```php
+$user = db()
+    ->table('users')
+    ->where('email', $email)
+    ->first();
+```
+
+```php
+$users = db()
+    ->table('users')
+    ->where('status', 'active')
+    ->orWhere('role', 'admin')
+    ->whereNull('deleted_at')
+    ->whereNotNull('email')
+    ->like('name', '%John%')
+    ->get();
+```
+
+Normal operators are whitelisted, including comparison operators, `LIKE`/`NOT LIKE`, and PostgreSQL `ILIKE`/`NOT ILIKE`.
+
+For a deliberate SQL fragment, use `whereRaw()`/`orWhereRaw()` and keep the SQL developer-controlled.
+
+## Joins
+
+```php
+$users = db()
+    ->table('users')
+    ->leftJoin(
+        'profiles',
+        'profiles.user_id',
+        '=',
+        'users.id'
+    )
+    ->select('users.id', 'users.name', 'profiles.bio')
+    ->get();
+```
+
+Normal join types are limited to `INNER`, `LEFT`, and `RIGHT`.
 
 ## Read methods
 
@@ -126,117 +88,93 @@ Order expressions must remain developer-controlled.
 ->get();
 ->first();
 ->find(5);
-->find(10, 'user_id');
 ->exists();
 ->count();
-->count('email');
 ->pluck('email');
 ->value('email');
 ```
 
-`first()` and `value()` add `LIMIT 1` for builder-generated SQL. Complete raw SQL remains developer-controlled.
-
 ## Insert
 
 ```php
-$ok = db()->table('users')->insert([
-    'name' => 'Rahim',
-    'email' => 'rahim@example.com',
-]);
+$id = db()
+    ->table('users')
+    ->insert([
+        'name' => 'Rahim',
+        'email' => 'rahim@example.com',
+    ], true);
 ```
 
-Return the inserted ID:
-
-```php
-$id = db()->table('users')->insert($data, true);
-```
+The second argument requests the inserted ID.
 
 ## Update
 
 ```php
-$ok = db()->table('users')
+db()
+    ->table('users')
     ->where('id', 5)
     ->update(['status' => 'active']);
-```
-
-Update without a WHERE condition is forbidden.
-
-## Update or insert
-
-```php
-$result = db()->table('settings')->updateOrInsert(
-    ['key' => 'theme'],
-    ['value' => 'dark']
-);
 ```
 
 ## Delete
 
 ```php
-$ok = db()->table('users')
+db()
+    ->table('users')
     ->where('id', 5)
     ->delete();
 ```
 
-Delete without a WHERE condition is forbidden.
+Builder-generated `UPDATE` and `DELETE` operations require a `WHERE` condition.
 
-## Raw SELECT
+## Update or insert
 
 ```php
-$users = db()->raw(
-    'SELECT * FROM users WHERE status = ?',
-    ['active']
-)->get();
+db()
+    ->table('settings')
+    ->updateOrInsert(
+        ['key' => 'theme'],
+        ['value' => 'dark']
+    );
 ```
 
-## Raw INSERT, UPDATE or DELETE
+Bhitti generates a native upsert for MySQL, PostgreSQL, and SQLite. The match columns must correspond to an appropriate unique/primary constraint.
+
+## Raw SQL
 
 ```php
-$ok = db()->raw(
-    'UPDATE users SET status = ? WHERE id = ?',
-    ['active', 5]
-)->execute();
+$users = db()
+    ->raw(
+        'SELECT * FROM users WHERE status = ?',
+        ['active']
+    )
+    ->get();
 ```
 
-Return a raw insert ID:
-
 ```php
-$id = db()->raw(
-    'INSERT INTO users (name, email) VALUES (?, ?)',
-    ['Rahim', 'rahim@example.com']
-)->execute(true);
+db()
+    ->raw(
+        'UPDATE users SET status = ? WHERE id = ?',
+        ['active', 5]
+    )
+    ->execute();
 ```
 
-## Compile SQL
+`raw()`, `selectRaw()`, and `whereRaw()` are explicit escape hatches. Their SQL text must remain developer-controlled.
+
+## Identifier safety
+
+Normal builder methods validate table names, identifiers, aliases, order expressions, operators, booleans, and join types before SQL is generated. Values remain PDO-bound.
+
+`limit()` rejects negative limits/offsets.
+
+## Inspect generated SQL
 
 ```php
-$sql = db()->table('users')
-    ->where('status', 'active')
+$sql = db()
+    ->table('users')
+    ->where('active', 1)
     ->toSql();
 ```
 
-## Security contract
-
-Prepared statements protect bound values. These arguments are SQL structure and must be developer-controlled:
-
-- table names
-- selected columns
-- column names
-- operators
-- order expressions
-- join expressions
-- complete raw SQL
-
-Safe:
-
-```php
-->where('email', request()->input('email'))
-```
-
-Unsafe application code:
-
-```php
-->order(request()->query('sort'))
-```
-
-Map user choices through an application allowlist before using them as identifiers or SQL expressions.
+Bhitti does not currently provide `groupBy()` in the Query Builder; use a raw query when grouping is required.

@@ -1,64 +1,38 @@
+---
+layout: default
+title: Controllers
+---
+
 # Controllers
 
-Controllers live in `app/Controllers` and commonly extend the base controller.
+Controllers normally live in `app/Controllers/` and are resolved through Bhitti's service container only after route middleware succeeds.
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 namespace App\Controllers;
 
-use App\Systems\Response;
+use Bhitti\Http\Response;
 
 final class UserController extends Controller
 {
     public function index(): Response
     {
-        $users = db()->table('users')->get();
+        $users = db()
+            ->table('users')
+            ->select('id', 'name', 'email')
+            ->get();
 
         return response()->json(['users' => $users]);
     }
 }
 ```
 
-## Rendering a view
+## Constructor injection
 
-```php
-public function index(): void
-{
-    $users = db()->table('users')->get();
-
-    view('users.index', [
-        'title' => 'Users',
-        'users' => $users,
-    ]);
-}
-```
-
-## Controller-level middleware
-
-Execute one middleware immediately:
-
-```php
-public function dashboard(): Response
-{
-    $this->middleware(Authenticated::class);
-
-    return response()->html('Dashboard');
-}
-```
-
-Several middleware:
-
-```php
-$this->middlewares([
-    Authenticated::class,
-    [RoleMiddleware::class, ['admin']],
-]);
-```
-
-A blocking controller middleware sends its response and exits. Prefer route middleware when the same rule naturally belongs to the route definition.
-
-## Dependency injection
-
-Controllers are resolved through the service container, so class-typed constructor dependencies are supported.
+Concrete constructor dependencies are autowired:
 
 ```php
 final class ReportController extends Controller
@@ -69,4 +43,30 @@ final class ReportController extends Controller
 }
 ```
 
-The dependency must be instantiable or configured in `config/container.php`.
+Bind interfaces or custom implementations in container configuration when automatic construction is not enough.
+
+## Route parameters
+
+Route parameters are passed to the controller method:
+
+```php
+public function show(int $id): Response
+{
+    $user = db()->table('users')->find($id);
+
+    return response()->json(['user' => $user]);
+}
+```
+
+Bhitti does not inject the Request object into controller methods. Use `request()` when needed.
+
+## Returning views
+
+`view()` returns the rendered string:
+
+```php
+public function index(): string
+{
+    return view('welcome', ['title' => 'Bhitti']);
+}
+```

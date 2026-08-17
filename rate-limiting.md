@@ -1,79 +1,45 @@
+---
+layout: default
+title: Rate Limiting
+---
+
 # Rate Limiting
 
-Rate limiting is included as global web and API middleware.
+Bhitti supports file, APCu, Redis, and Memcached rate-limit stores.
 
-## Configuration
+## Starter middleware behavior
 
-`config/rate_limit.php` defines:
+`RateLimit` is configured as **route-level global middleware**, so it runs only after a route matches.
 
-- driver
-- key prefix
-- guest web policy
-- authenticated web policy
-- API policy
-- sensitive-route policy
-- file-driver cleanup settings
+The starter application has policies for:
 
-## Included policy behavior
+- web guests,
+- authenticated web users,
+- API requests, and
+- sensitive routes such as login/register/forgot-password.
 
-Sensitive routes use method and normalized path:
-
-```text
-POST /login
-POST /register
-POST /api/auth/login
-POST /api/auth/register
-POST /api/auth/forgot
-```
-
-Other API requests use the client IP. Authenticated web requests use the user ID; guest web requests use the client IP.
-
-## Response headers
-
-Allowed and rejected requests can include:
-
-```text
-X-RateLimit-Limit
-X-RateLimit-Remaining
-X-RateLimit-Reset
-Retry-After
-```
-
-Rejected API request:
-
-```json
-{
-  "error": "Too many requests",
-  "retry_after": 30
-}
-```
+Configure them in `config/rate_limit.php`.
 
 ## Direct API
 
 ```php
-$result = RateLimiter::hit('login:ip:' . request()->ip(), 5, 60);
+use Bhitti\RateLimit\RateLimiter;
+
+$result = RateLimiter::hit(
+    'login:' . request()->ip(),
+    10,
+    60
+);
 
 if (!$result->allowed()) {
     return response()->json([
-        'error' => 'Too many attempts',
+        'message' => 'Too many requests.',
         'retry_after' => $result->retryAfter(),
     ], 429);
 }
 ```
 
-Clear a key:
-
-```php
-RateLimiter::clear('login:ip:' . request()->ip());
-```
-
-Reset the resolved driver instance:
-
-```php
-RateLimiter::reset();
-```
-
-## Result object
+Result methods:
 
 ```php
 $result->allowed();
@@ -84,17 +50,26 @@ $result->retryAfter();
 $result->resetAt();
 ```
 
-## Drivers
+Clear a key:
 
-- File: portable, locked local counters
-- APCu: low-latency local counters with environment limitations
-- Redis: atomic Lua increment and expiry
-- Memcached: atomic increment with separate reset timestamp
+```php
+RateLimiter::clear($key);
+```
 
-## Multiple Memcached servers
+Reset the active rate-limit driver:
 
-The Memcached client hashes each rate-limit key to one configured server. Adding or removing servers changes key distribution and may temporarily reset counters. Use Redis when strict distributed rate-limit continuity is essential.
+```php
+RateLimiter::reset();
+```
 
-## Failures
+## Redis
 
-The current drivers throw when a rate-limit operation cannot be completed. The central exception handler converts uncaught failures to a 500 response. Choose and monitor a reliable production store.
+The Redis driver uses Lua for atomic counter/expiry behavior and the shared named Redis connection manager.
+
+## Memcached
+
+The Memcached driver uses the centralized Memcached connection manager shared with cache and sessions.
+
+## Client IP behind proxies
+
+IP-based rate limiting depends on `request()->ip()`. Configure only proxies you actually trust; Bhitti supports exact addresses and CIDR ranges and ignores forwarded client headers from untrusted direct connections.

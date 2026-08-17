@@ -1,74 +1,66 @@
+---
+layout: default
+title: Service Container
+---
+
 # Service Container
 
-The container supports normal bindings, singletons, closures and automatic constructor injection with cached reflection metadata.
+Bhitti's container provides constructor autowiring, explicit bindings, singletons, instances, and runtime constructor parameters without a service-provider hierarchy.
 
-## Configuration
-
-`config/container.php`:
-
-```php
-return [
-    'singletons' => [
-        \App\Systems\Database::class,
-    ],
-    'bindings' => [],
-];
-```
-
-## Singleton
-
-Use a singleton when one instance should be reused during a request:
-
-```php
-'singletons' => [
-    \App\Systems\Database::class,
-    \App\Services\FileLogger::class,
-],
-```
-
-Do not register stateful per-query objects such as `QueryBuilder` or reusable response objects as singletons.
-
-## Interface binding
-
-```php
-'bindings' => [
-    \App\Contracts\LoggerInterface::class
-        => \App\Services\FileLogger::class,
-],
-```
-
-Constructor:
-
-```php
-final class AuditService
-{
-    public function __construct(private LoggerInterface $logger)
-    {
-    }
-}
-```
-
-## Closure binding
-
-Programmatic registration:
-
-```php
-$container->singleton(ApiClient::class, function ($container) {
-    return new ApiClient(config('services.api.key'));
-});
-```
-
-## Resolve manually
+## Resolve a class
 
 ```php
 $service = $container->make(ReportService::class);
 ```
 
-## Resolution rules
+Concrete constructor dependencies are resolved recursively.
 
-- Class-typed constructor parameters are recursively resolved.
-- Built-in parameters require default values.
-- Non-instantiable classes require a binding.
-- ReflectionClass instances are cached.
+## Bind an abstraction
 
-Keep the container small. It is a dependency-resolution tool, not a registry for every static framework component.
+```php
+$container->bind(
+    MailerInterface::class,
+    SmtpMailer::class
+);
+```
+
+## Singleton
+
+```php
+$container->singleton(
+    Metrics::class,
+    Metrics::class
+);
+```
+
+## Existing instance
+
+```php
+$container->instance(
+    ClockInterface::class,
+    $clock
+);
+```
+
+## Runtime parameters
+
+Middleware and other runtime-created services can receive explicit constructor values through `makeWith()`:
+
+```php
+$middleware = $container->makeWith(
+    RoleMiddleware::class,
+    ['admin']
+);
+```
+
+Named parameters are also supported where they match constructor parameter names.
+
+## Container configuration
+
+Application-level singleton registrations live in `config/container.php`.
+
+## Resolution behavior
+
+Bhitti caches reflection metadata and detects circular dependency chains. Interfaces/abstract types must be bound unless a nullable/default constructor parameter lets the container omit them.
+
+Union/intersection constructor types are intentionally not treated as automatic class dependencies; bind or provide those values explicitly.

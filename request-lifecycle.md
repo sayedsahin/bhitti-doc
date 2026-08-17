@@ -1,63 +1,58 @@
+---
+layout: default
+title: Request Lifecycle
+---
+
 # Request Lifecycle
 
-The main entry point is `public/index.php`.
+Bhitti keeps the hot path direct and avoids starting stateful services before they are needed.
 
-## Bootstrap order
+## 1. Entry point
 
-1. Define application paths.
-2. Load Composer autoloading.
-3. Load cached configuration or build it from `.env` and `config/*.php`.
-4. Detect web or API mode from the normalized path.
-5. Register the central exception handler.
-6. Configure sessions for web requests.
-7. Register the lazy cache resolver.
-8. Register the authentication user resolver.
-9. Build the service container.
-10. Run global web or API middleware.
-11. Dispatch the route.
-12. Run route middleware.
-13. Resolve and call the controller.
-14. Send a returned `Response`.
-
-## Request object
-
-The `request()` helper lazily captures the PHP superglobals once per request.
+`public/index.php` loads the application and captures the request:
 
 ```php
-$request = request();
+$app = require dirname(__DIR__) . '/bootstrap/app.php';
+$app->run(Request::capture());
 ```
 
-## Global middleware
+## 2. Application bootstrap
 
-Global middleware is configured in `config/middleware.php`. A middleware response is sent immediately and the request exits.
+The application loads configuration, services, the container, router, middleware kernel, and route dispatcher. In production, cached configuration and cached routes are used when available.
 
-## Route middleware
+## 3. Kernel middleware
 
-Route middleware runs after a route is found and before the controller. A returned response is sent and routing returns.
+The kernel executes `middleware.kernel.web` or `middleware.kernel.api` **before route matching**.
 
-## Controller response
+These middleware must remain stateless because the session is not configured at this stage. Header/CORS-style middleware belongs here.
 
-```php
-$result = $controller->$action(...array_values($vars));
+## 4. Route matching
 
-if ($result instanceof \App\Systems\Response) {
-    $result->send();
-}
-```
+FastRoute resolves the request.
 
-A controller that renders a view may return `void`, because `view()` includes the PHP template directly.
+- `NOT_FOUND` returns 404.
+- `METHOD_NOT_ALLOWED` returns 405 and an `Allow` header.
+- `FOUND` continues to route execution.
 
-## Web and API Request Detection
+404/405 requests do not start route middleware or a web session.
 
-Bhitti identifies API requests by their normalized URL path.
+## 5. Matched route execution
 
-A request is considered an API request when its path is exactly `/api` or begins with `/api/`.
+For a matched **web** route, the configured session driver is registered. If sessions are disabled, Bhitti uses the null session driver. API routes do not configure PHP sessions.
 
-```php
-function is_api_request(): bool
-{
-    $path = request()->path();
+Bhitti then merges:
 
-    return $path === '/api' || str_starts_with($path, '/api/');
-}
-```
+1. route-level global middleware from `config/middleware.php`, and
+2. route/controller middleware collected with the route.
+
+Only after middleware succeeds is the controller resolved from the container.
+
+## 6. Controller arguments
+
+Route scalar parameters are validated against built-in parameter types captured by the router (`int`, `float`, `bool`, and similar built-ins). Invalid typed route input receives a 400 response.
+
+## 7. Controller result
+
+- A `Response` object is sent.
+- A string is emitted as the response body.
+- `view()` returns a string, so controllers can simply `return view(...)`.

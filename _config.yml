@@ -1,5 +1,5 @@
 theme: jekyll-theme-minimal
 title: Bhitti Documentation
-description: Official guides, setup instructions, and documentation for the Bhitti PHP framework.
+description: Developer documentation for the lightweight, PHP-FPM-oriented Bhitti framework.
 lang: en-US
 show_downloads: false

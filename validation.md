@@ -1,113 +1,54 @@
+---
+layout: default
+title: Validation
+---
+
 # Validation
 
-Create a validator from an array:
+Create a validator from an input array:
 
 ```php
-use App\Validation\Validator;
+use Bhitti\Validation\Validator;
 
 $validator = Validator::make(request()->all())
     ->required(['name', 'email'])
     ->string(['name', 'email'])
-    ->email('email');
+    ->email('email')
+    ->max('name', 100);
 ```
 
-## Reading results
+## Checking validation
 
 ```php
 if ($validator->fails()) {
-    $errors = $validator->errors();
+    return response()->json([
+        'errors' => $validator->errors(),
+    ], 422);
 }
 
 $data = $validator->validated();
 ```
 
-`validated()` returns only fields that participated in validation rules. It throws `ValidationException` when validation failed.
-
-## Try/catch flow
+## Available rules
 
 ```php
-try {
-    $data = Validator::make(request()->json())
-        ->required(['email', 'password'])
-        ->email('email')
-        ->validated();
-} catch (\App\Validation\ValidationException $e) {
-    return response()->json(['errors' => $e->errors()], 422);
-}
-```
-
-## Rules
-
-### `required()`
-
-Rejects missing values, `null`, empty strings, whitespace-only strings and empty arrays.
-
-```php
+->nullable('phone')
 ->required(['name', 'email'])
-```
-
-### `nullable()`
-
-Allows `null` for later rules.
-
-```php
-->nullable('phone')->string('phone')
-```
-
-### Type rules
-
-```php
 ->string('name')
 ->int('age')
 ->bool('active')
 ->email('email')
-```
-
-`int()` and `bool()` are strict. HTML form values are strings, so cast or normalize them before strict type validation. JSON numbers and booleans retain their native types.
-
-### Length rules
-
-```php
 ->min('password', 8)
 ->max('name', 100)
-```
-
-These rules use `mb_strlen()` on the string representation.
-
-### Allowed values
-
-```php
-->in('status', ['draft', 'published'])
-```
-
-### Confirmation
-
-```php
+->in('status', ['active', 'inactive'])
 ->confirmed('password')
-```
-
-This compares `password` with `password_confirmation`. The confirmation field is used for comparison but is not automatically added to the validated result unless another rule registers it.
-
-### Conditional required rule
-
-```php
-->sometimes('company_name', function (array $data): bool {
-    return ($data['account_type'] ?? null) === 'business';
-})
-```
-
-### Custom validation
-
-```php
-->custom(function (Validator $validator): void {
-    // Compose application-specific checks.
-})
-```
-
-## Bail
-
-```php
+->sometimes('company_name', $callback)
+->custom($callback)
 ->bail()
 ```
 
-The validator throws immediately after the first failure.
+`bail()` enables fail-fast validation: the first recorded failure throws `ValidationException`. Without `bail()`, inspect `fails()`/`errors()` after applying rules.
+
+## Validation exceptions
+
+`validated()` also throws `ValidationException` when validation has failed; otherwise it returns only fields that participated in validation rules.

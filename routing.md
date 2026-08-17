@@ -1,19 +1,20 @@
+---
+layout: default
+title: Routing
+---
+
 # Routing
 
-Routes are defined in `config/routes.php` using FastRoute.
+Routes are defined in `config/routes.php` using FastRoute's route collector extended by Bhitti.
 
 ## Basic routes
 
 ```php
-$route->get('/', [HomeController::class, 'index']);
-$route->post('/login', [AuthController::class, 'loginProcess']);
+$route->get('/users', [UserController::class, 'index']);
+$route->post('/users', [UserController::class, 'store']);
 ```
 
-The handler array contains:
-
-```text
-[ControllerClass::class, 'method', optional middleware array]
-```
+Other FastRoute methods such as `put`, `patch`, and `delete` are available through the collector.
 
 ## Route parameters
 
@@ -21,64 +22,70 @@ The handler array contains:
 $route->get('/users/{id:\\d+}', [UserController::class, 'show']);
 ```
 
-Controller:
-
 ```php
-public function show(string $id): Response
+public function show(int $id): Response
 {
-    $user = db()->table('users')->find((int) $id);
-
-    return response()->json(['user' => $user]);
+    return response()->json(['id' => $id]);
 }
 ```
 
-Matched variables are passed to the controller in FastRoute's returned order.
+Bhitti records built-in controller parameter types in the route definition and validates matched values before invoking the controller.
+
+## Route groups
+
+```php
+$route->addGroup('/api', function () use ($route) {
+    $route->get('/welcome', [WelcomeController::class, 'apiIndex']);
+});
+```
+
+Groups can be nested.
 
 ## Route middleware
 
-```php
-$route->get('/account', [AccountController::class, 'index', [
-    Authenticated::class,
-]]);
-```
-
-Parameterized middleware receives one array argument:
+Put route-specific middleware in the third element of the handler array:
 
 ```php
-$route->get('/admin', [AdminController::class, 'index', [
-    Authenticated::class,
-    [RoleMiddleware::class, ['admin', 'editor']],
-]]);
+$route->get('/dashboard', [
+    DashboardController::class,
+    'index',
+    [Authenticated::class],
+]);
 ```
 
-## API routes
-
-Routes beginning with `/api` use the API middleware stack and JSON-style 404/405 responses.
+Parameterized middleware:
 
 ```php
-$route->get('/api/profile', [ApiAuthController::class, 'profile', [
-    BearerAuth::class,
-]]);
+$route->get('/admin', [
+    AdminController::class,
+    'index',
+    [
+        Authenticated::class,
+        [RoleMiddleware::class, ['admin']],
+    ],
+]);
 ```
 
-## 404 and 405
+## Invokable controllers
 
-- Web requests receive plain 404/405 responses.
-- API requests receive JSON.
-- 405 responses include the `Allow` header.
+A class name may be used directly when it implements `__invoke()`:
+
+```php
+$route->get('/health', HealthController::class);
+```
+
+## Controller middleware attributes
+
+Controller classes or methods can declare Bhitti's middleware attribute. Collected controller middleware is merged into the same matched-route middleware list.
 
 ## Route cache
 
-When debug mode is disabled, FastRoute uses:
+```bash
+php run route:cache
+```
+
+The generated FastRoute cache is stored at:
 
 ```text
-storage/cache/route.cache
+storage/cache/route.cache.php
 ```
-
-Rebuild before deployment:
-
-```bash
-php art cache:route
-```
-
-Do not package a route cache generated on another release or machine.

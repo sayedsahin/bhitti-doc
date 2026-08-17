@@ -1,132 +1,87 @@
+---
+layout: default
+title: Troubleshooting
+---
+
 # Troubleshooting
 
-## `.env` changes have no effect
+## `php run` cannot load the framework
 
-Configuration is cached. Rebuild it:
-
-```bash
-php art cache:config
-```
-
-Or remove `storage/cache/config.php` and let the next bootstrap rebuild it.
-
-## New or changed routes do not appear
+Run Composer first:
 
 ```bash
-php art cache:route
+composer install
 ```
 
-In development, enable debug mode to disable route cache.
+Confirm `vendor/autoload.php` exists and the application requires `sayedsahin/bhitti-framework`.
 
-## APCu callback runs several times
+## Configuration changes are not visible
 
-Possible causes:
+When using cached production configuration:
 
-- Windows or process-isolated PHP workers
-- separate FPM pools
-- separate containers or servers
-- TTL expiration
-- eviction
-- simultaneous cache misses
+```bash
+php run config:cache
+```
 
-Use Redis or Memcached when all workers and CLI processes must share cache consistently.
+Or clear caches:
 
-## APCu is unavailable
+```bash
+php run cache:clear
+```
 
-Choose another driver:
+## Route changes are not visible
+
+Regenerate the route cache:
+
+```bash
+php run route:cache
+```
+
+## Session driver error
+
+Check:
 
 ```dotenv
-CACHE_DRIVER=file
-RATE_LIMIT_STORE=file
+SESSION_ENABLED=true
+SESSION_DRIVER=native
 ```
 
-Or install and enable APCu in the target web SAPI.
+For Redis/Memcached, confirm the required PHP extension and service connection. If sessions are intentionally disabled, Bhitti uses the null session driver on matched web routes.
 
-## Redis or Memcached request returns 500
+## Redis connection error
 
-Check:
+Verify the named profile in `config/database.php` and the service's connection name in `cache.php`, `session.php`, or `rate_limit.php`.
 
-- extension installed
-- service running
-- host and port
-- authentication
-- selected database
-- network/firewall access
-- central PHP error log
+## Memcached connection error
 
-## Session cookie is not created
+Verify the Memcached PHP extension, host/port, and server configuration under `database.memcached`.
 
-Check:
+## Wrong client IP or scheme behind a proxy
 
-- route is a web route, not `/api/*`
-- `SESSION_DRIVER=native`
-- `SESSION_SECURE` matches HTTPS availability
-- trusted proxy configuration when HTTPS terminates upstream
-- headers were not already sent
+Set only trusted proxy addresses/ranges:
 
-## CSRF mismatch
-
-Ensure the request includes one of:
-
-```php
-<?= csrf_field() ?>
+```dotenv
+TRUSTED_PROXIES=10.0.0.0/8
 ```
 
-```http
-X-CSRF-Token: TOKEN
-```
+If `REMOTE_ADDR` is not trusted, Bhitti intentionally ignores forwarded headers.
 
-```json
-{"_csrf":"TOKEN"}
-```
+## Migration repository mismatch after upgrading old development databases
 
-The session must be active and the client must retain the session cookie.
+Current migration tracking no longer requires a `checksum` column. If an older development database still has a non-null checksum column, recreate or update the migration repository before using the current migration logger.
 
-## Bearer authentication fails
+## `db:seed` skips a file
 
-Check:
-
-- `Authorization: Bearer ...` is forwarded by the web server
-- FastCGI forwarding rules
-- token stored as SHA-256 hash
-- token expiration
-- route includes `BearerAuth`
-
-## Invalid parameter number
-
-For `whereRaw()`, the number of `?` placeholders must exactly match bindings.
-
-For complete raw SQL, do not mix positional and named parameters in one statement.
-
-## UPDATE or DELETE is forbidden
-
-Bhitti requires a WHERE condition for builder-generated update and delete operations.
-
-```php
-->where('id', $id)->update($data)
-->where('id', $id)->delete()
-```
-
-For intentionally broad data maintenance, use explicit developer-controlled raw SQL and `execute()`.
-
-## View not found
-
-Dot notation must match a PHP file under `app/Views`:
-
-```php
-view('auth.login');
-```
-
-```text
-app/Views/auth/login.php
-```
-
-## Class not found
-
-Run:
+Check `database/seeders/database.seeder.php`. Commented entries are intentionally skipped by full seeding. Run a file explicitly with:
 
 ```bash
-composer dump-autoload
+php run db:seed --filename=users
 ```
 
-Confirm namespace and file path follow the `App\\` PSR-4 mapping.
+## Redirect to an external URL fails
+
+`redirect()->to()` is local-only. Use:
+
+```php
+response()->redirect()->away('https://example.com');
+```

@@ -1,54 +1,57 @@
+---
+layout: default
+title: Installation
+---
+
 # Installation
 
 ## Requirements
 
-- PHP 8.2 or newer
-- Composer
-- PDO
-- PDO MySQL for the bundled MySQL connection
-- Mbstring for validation length rules
-- A web server whose document root points to `public/`
+Bhitti requires PHP **8.3+**, Composer, PDO, Mbstring, and the PDO extension for your chosen SQL database.
 
-Optional extensions:
+Install optional extensions only when you use their drivers: PhpRedis, Memcached, or APCu.
 
-- APCu for APCu cache or rate limiting
-- PhpRedis for Redis cache or rate limiting
-- Memcached extension for Memcached cache or rate limiting
-- GD for `ImageHelper`
+## Get the application and framework
 
-## Install dependencies
+The current Bhitti application uses the framework as a sibling Composer path repository. Keep this layout:
 
-From the project root:
+```text
+projects/
+  bhitti/
+  bhitti-framework/
+```
+
+Example:
 
 ```bash
+git clone https://github.com/sayedsahin/bhitti.git
+git clone https://github.com/sayedsahin/bhitti-framework.git
+cd bhitti
 composer install
 ```
 
-After adding or moving application classes:
+The application `composer.json` resolves `sayedsahin/bhitti-framework` from `../bhitti-framework` and symlinks it during development.
 
-```bash
-composer dump-autoload
-```
-
-## Environment file
-
-Copy the example file:
+Create the environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-On Windows PowerShell:
+Windows PowerShell:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Configure at least:
+## Configure the application
+
+At minimum, set the application URL and database credentials:
 
 ```dotenv
-DEBUG_MODE=true
-BASE_URL=http://localhost
+APP_DEBUG=true
+BASE_URL=http://127.0.0.1:8000
+APP_TIMEZONE=UTC
 
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -56,51 +59,35 @@ DB_PORT=3306
 DB_NAME=bhitti
 DB_USERNAME=root
 DB_PASSWORD=
-
-SESSION_DRIVER=native
-CACHE_DRIVER=file
-RATE_LIMIT_STORE=file
 ```
 
-## Database schema
+Run migrations:
 
-The starter archive includes `database/backup.sql`. Import it into the configured database when using the bundled authentication examples.
-
-## Writable directories
-
-The web-server user must be able to write to:
-
-```text
-storage/cache/
-storage/cache/file-cache/
-storage/cache/rate-limit/
+```bash
+php run migrate
 ```
 
-The file drivers create their own subdirectories, but the parent storage path still needs suitable permissions.
+Optionally seed the database:
 
-## Development start
+```bash
+php run db:seed
+```
 
-For PHP's development server:
+## Local development server
 
 ```bash
 php -S 127.0.0.1:8000 -t public
 ```
 
-Set:
+The built-in PHP server is for local development. In production, point the web server document root at `public/` and run PHP through your chosen PHP-FPM deployment.
 
-```dotenv
-BASE_URL=http://127.0.0.1:8000
-DEBUG_MODE=true
-```
+## Production caches
 
-Do not use the built-in server as the production server.
-
-## Refresh cached configuration
-
-After changing `.env` or files in `config/`:
+Before production traffic, generate configuration and route caches:
 
 ```bash
-php art cache:config
+php run config:cache
+php run route:cache
 ```
 
-See [Command-line tools](24-command-line-tools.md).
+Generated files are stored under `storage/cache/`.

@@ -1,26 +1,26 @@
+---
+layout: default
+title: Responses and Redirects
+---
+
 # Responses and Redirects
 
-## Create a response
-
-```php
-return response('Hello', 200);
-```
-
-## HTML
-
-```php
-return response()->html('<h1>Hello</h1>');
-```
+Use the `response()` helper to build HTTP responses.
 
 ## JSON
 
 ```php
 return response()->json([
-    'status' => 'ok',
+    'status' => 'success',
+    'data' => $data,
 ], 200);
 ```
 
-JSON encoding uses `JSON_THROW_ON_ERROR`.
+## HTML
+
+```php
+return response()->html('<h1>Hello</h1>', 200);
+```
 
 ## Status and headers
 
@@ -28,47 +28,50 @@ JSON encoding uses `JSON_THROW_ON_ERROR`.
 return response()
     ->status(201)
     ->header('X-App-Version', '1.0')
-    ->html('Created', 201);
+    ->json(['message' => 'Created'], 201);
 ```
 
-Several headers:
+Multiple headers can be added with `headers()`.
+
+## Local redirects
+
+Normal redirects are intentionally local:
 
 ```php
-return response()->json($data)->headers([
-    'Cache-Control' => 'no-store',
-    'X-Request-ID' => $requestId,
-]);
+return response()->redirect()->to('/dashboard');
 ```
 
-## Redirects
+`to()` rejects absolute and scheme-relative URLs (`http://`, `https://`, `//`). This makes user-provided redirect targets safer by default.
 
-```php
-return response()->redirect('/login');
-```
+## External redirects
 
-With flash data:
-
-```php
-return response()
-    ->redirect('/login')
-    ->with(['success' => 'Registration successful']);
-```
-
-Back to a same-domain referrer:
+Use `away()` explicitly for an external destination:
 
 ```php
 return response()
     ->redirect()
-    ->with(['error' => 'Invalid input'])
+    ->away('https://example.com');
+```
+
+## Redirect back
+
+```php
+return response()
+    ->redirect()
     ->back('/');
 ```
 
-Explicit external redirect:
+Bhitti uses the referer only when it belongs to the same host as `BASE_URL`; otherwise it uses the fallback.
+
+## Flash data with a redirect
 
 ```php
-return response()->redirect()->away('https://example.com');
+return response()
+    ->redirect()
+    ->with([
+        'success' => 'Profile updated.',
+    ])
+    ->to('/profile');
 ```
 
-## Sending
-
-Normally the router sends returned `Response` objects. Middleware and controller-level middleware may send a blocking response directly.
+`with()` stores the array in the current session under the `flash` key. The application-level `flash()` helper reads and consumes flash messages.

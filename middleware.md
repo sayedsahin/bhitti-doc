@@ -1,36 +1,32 @@
+---
+layout: default
+title: Middleware
+---
+
 # Middleware
 
-Middleware implements:
+Bhitti middleware is deliberately simple: `handle()` returns `null` to continue or a `Response` to stop the request.
 
 ```php
-namespace App\Systems\Middleware;
+<?php
 
-use App\Systems\Response;
+declare(strict_types=1);
 
-interface MiddlewareInterface
-{
-    public function handle(): ?Response;
-}
-```
-
-Return `null` to continue or a `Response` to stop the request.
-
-## Create middleware
-
-```php
 namespace App\Middlewares;
 
-use App\Systems\Middleware\MiddlewareInterface;
-use App\Systems\Response;
+use Bhitti\Http\Middleware\MiddlewareInterface;
+use Bhitti\Http\Response;
 
 final class VerifiedEmail implements MiddlewareInterface
 {
     public function handle(): ?Response
     {
-        $user = \App\Supports\Auth::user();
+        $user = auth()->user();
 
         if (!$user || !$user->email_verified) {
-            return response()->html('Email verification required', 403);
+            return response()->json([
+                'message' => 'Email verification required.',
+            ], 403);
         }
 
         return null;
@@ -38,66 +34,62 @@ final class VerifiedEmail implements MiddlewareInterface
 }
 ```
 
-## Global middleware
+## Two global middleware levels
 
-Configure stacks in `config/middleware.php`:
+`config/middleware.php` separates middleware by when it should run:
 
 ```php
 return [
-    'web' => [
-        WebHeaders::class,
-        SessionStart::class,
-        RateLimit::class,
-        RememberMe::class,
-        Csrf::class,
+    'kernel' => [
+        'web' => [WebHeaders::class],
+        'api' => [ApiHeaders::class],
     ],
-    'api' => [
-        ApiHeaders::class,
-        RateLimit::class,
+
+    'route' => [
+        'web' => [
+            RateLimit::class,
+            RememberMe::class,
+            Csrf::class,
+        ],
+        'api' => [
+            RateLimit::class,
+        ],
     ],
 ];
 ```
 
-## Route middleware
+### Kernel-level middleware
+
+Kernel middleware runs **before route matching** for every request. Keep it stateless. The session is not configured yet.
+
+Good uses include response/security headers and other request-level behavior that must also apply to 404/405 responses.
+
+### Route-level middleware
+
+Route-level global middleware runs only after a route is found. Web sessions are configured immediately before this stage, so session-dependent middleware belongs here.
+
+This means unknown routes do not unnecessarily touch session storage or route-level rate limiting.
+
+## Route-specific middleware
 
 ```php
-$route->get('/dashboard', [DashboardController::class, 'index', [
-    Authenticated::class,
-]]);
+$route->get('/dashboard', [
+    DashboardController::class,
+    'index',
+    [Authenticated::class],
+]);
 ```
+
+The route-level global middleware runs first, followed by route/controller middleware.
 
 ## Middleware arguments
 
-Parameterized middleware constructors receive one array:
-
 ```php
-[RoleMiddleware::class, ['admin', 'editor']]
+[RoleMiddleware::class, ['admin']]
 ```
 
-```php
-public function __construct(private array $roles)
-{
-}
-```
+Bhitti resolves middleware through the container and passes supplied arguments with `makeWith()`.
 
-## Included middleware
+## Controller middleware attributes
 
-| Middleware | Purpose |
-|---|---|
-| `WebHeaders` | Web security headers and CSP |
-| `ApiHeaders` | JSON, no-store and nosniff headers |
-| `SessionStart` | Starts the configured session |
-| `RateLimit` | Applies request rate-limit policy |
-| `RememberMe` | Restores and rotates remember tokens |
-| `Csrf` | Protects state-changing web requests |
-| `Authenticated` | Requires an authenticated user |
-| `Guest` | Redirects authenticated users away from guest pages |
-| `BearerAuth` | Validates API bearer tokens |
-| `RoleMiddleware` | Requires any configured role |
-
-## Execution behavior
-
-- Global middleware response: sent, then request exits.
-- Route middleware response: sent, then routing returns.
-- Controller middleware response: sent, then request exits.
-- `Response::send()` itself does not call `exit`.
+Bhitti also supports its `#[Middleware(...)]` attribute on controllers/methods. These entries are collected during route registration and executed in the same matched-route middleware list.

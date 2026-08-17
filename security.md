@@ -1,89 +1,67 @@
+---
+layout: default
+title: Security
+---
+
 # Security
 
-## Production debug setting
+Bhitti provides small security primitives, but application security still depends on correct configuration and application code.
 
-```dotenv
-DEBUG_MODE=false
-```
+## CSRF
 
-Debug mode exposes exception details and disables the production route cache.
-
-## Document root
-
-Expose only `public/`. Never serve `app/`, `config/`, `storage/`, `.env` or database backups directly.
-
-## Prepared values
-
-Query Builder values are bound through PDO:
+The starter web route middleware includes `Csrf`. Add a token to state-changing web forms:
 
 ```php
-->where('email', request()->input('email'))
+<?= $this->csrfField() ?>
 ```
 
-Table names, columns, operators, joins, order expressions and raw SQL are not bindable and must be developer-controlled.
+API routes do not use the web CSRF/session stack by default.
 
-## Output escaping
+## SQL safety
+
+Query Builder values are PDO-bound. Normal builder methods validate identifiers, operators, boolean connectors, join types, aliases, and order expressions.
+
+Raw SQL APIs are explicit escape hatches:
 
 ```php
-<?= e($value) ?>
+raw()
+selectRaw()
+whereRaw()
+orWhereRaw()
 ```
 
-Use `raw()` only for trusted HTML.
+Never build their SQL strings from untrusted input.
 
-## CSRF protection
+## Redirect safety
 
-The global web stack protects POST, PUT, PATCH and DELETE requests. Tokens may come from:
-
-- `_csrf` POST field
-- `X-CSRF-Token` header
-- `_csrf` JSON property
-
-Use `csrf_field()` in HTML forms.
-
-## Sessions
-
-Native sessions use strict mode, cookie-only transport, HttpOnly and SameSite. Set `SESSION_SECURE=true` behind HTTPS and configure trusted proxies correctly when TLS terminates upstream.
-
-## Passwords
-
-Use:
+Use local redirects normally:
 
 ```php
-password_hash($password, PASSWORD_DEFAULT);
-password_verify($password, $storedHash);
+response()->redirect()->to('/dashboard');
 ```
 
-Apply a minimum password policy during registration and reset flows.
-
-## Authentication tokens
-
-Store SHA-256 hashes for bearer, remember, verification and reset tokens. Send the raw token only to the intended client.
-
-## Redirects
-
-Prefer internal paths with `redirect('/path')`. Use `away()` only for explicit trusted external destinations. Never pass an unvalidated `next` query parameter directly to a redirect.
+Use `away()` only when an external redirect is intentional. `to()` rejects absolute and scheme-relative URLs.
 
 ## Trusted proxies
 
-Only exact IP addresses currently match `app.trusted_proxies`. CIDR strings are not interpreted by the current implementation.
+Only add infrastructure you control to `TRUSTED_PROXIES`. Exact IPv4/IPv6 addresses and CIDR ranges are supported.
 
-## Cache and rate-limit services
+Bhitti reads forwarded host, scheme, and client IP information only when the direct `REMOTE_ADDR` is trusted. This prevents a direct client from spoofing `X-Forwarded-*` headers into trusted request metadata.
 
-Do not expose Redis or Memcached to the public internet. Bind them to trusted networks, configure authentication where available and use application-specific prefixes/databases.
+## Sessions
 
-## Release packages
+Use secure, HTTP-only cookies in production and choose an appropriate SameSite value. Redis/Memcached session locking protects concurrent writes to the same session.
 
-Do not distribute:
+## Passwords and tokens
 
-```text
-.env
-storage/cache/config.php
-storage/cache/route.cache
-runtime cache files
+Use PHP's password hashing APIs for passwords. The starter bearer-auth implementation stores hashed API tokens rather than raw bearer tokens.
+
+## Production debug mode
+
+Keep:
+
+```dotenv
+APP_DEBUG=false
 ```
 
-Generated configuration cache may contain database credentials and machine-specific paths.
-
-## Database constraints
-
-Use unique indexes and foreign keys as the final integrity layer. Application-level existence checks alone are subject to concurrent races.
+in production.

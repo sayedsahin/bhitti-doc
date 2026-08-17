@@ -1,77 +1,45 @@
+---
+layout: default
+title: API Authentication
+---
+
 # API Authentication
 
-The starter application provides bearer-token authentication under `/api/auth/*`.
+The starter application includes bearer-token authentication for `/api/auth/*` routes.
 
-## Login flow
+Current routes include:
 
-1. Validate JSON email and password.
-2. Verify the password hash.
-3. Generate a random 32-byte token.
-4. Store its SHA-256 hash in `api_tokens`.
-5. Return the raw token once to the client.
+```text
+POST /api/auth/login
+POST /api/auth/register
+POST /api/auth/forgot
+GET  /api/auth/verify/{token}
+POST /api/auth/logout
+GET  /api/auth/profile
+```
 
-Client request:
+Protected routes use `BearerAuth` middleware.
+
+## Client header
 
 ```http
 Authorization: Bearer RAW_TOKEN
 ```
 
-## Protect a route
+The application returns the raw token to the client and stores a SHA-256 hash in the database rather than storing the raw token.
+
+## Protect an API route
 
 ```php
-$route->get('/api/auth/profile', [ApiAuthController::class, 'profile', [
-    BearerAuth::class,
-]]);
+$route->get('/api/private', [
+    PrivateController::class,
+    'index',
+    [BearerAuth::class],
+]);
 ```
 
-`BearerAuth` hashes the token, joins the token record to the user table, checks expiration and populates request-level authentication in one database query.
+`BearerAuth` validates the token, resolves the user, and places the authenticated state into the application's request-scoped auth support without starting a PHP web session.
 
-## Login example
+## API middleware
 
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "secret"
-}
-```
-
-Response:
-
-```json
-{
-  "token": "raw-token",
-  "user": {
-    "id": 1,
-    "name": "User",
-    "email": "user@example.com",
-    "roles": ["user"]
-  }
-}
-```
-
-## Logout
-
-The logout endpoint hashes the current bearer token and deletes it from `api_tokens`.
-
-## Registration and email verification
-
-The starter generates a random verification token, stores a SHA-256 hash and expects the raw token in the verification URL.
-
-```text
-GET /api/auth/verify/{raw-token}
-```
-
-## Password reset request
-
-The starter hashes reset tokens before storing them and sets an expiration time. Sending email and completing the password reset are application responsibilities.
-
-## Token storage rules
-
-- Never store a raw API, verification, reset or remember token when a one-way lookup hash is sufficient.
-- Return or email the raw token only to the intended user.
-- Use HTTPS in production.
-- Add database indexes on token hash and expiration columns.
-- Delete or rotate credentials after use.
+API requests use `middleware.kernel.api` before routing and `middleware.route.api` after a route is found. In the starter configuration this applies API headers globally and route-level rate limiting to matched API routes.

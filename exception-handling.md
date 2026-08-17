@@ -1,65 +1,34 @@
+---
+layout: default
+title: Exception Handling
+---
+
 # Exception Handling
 
-Bhitti registers a central exception, error and shutdown handler after configuration is loaded and before sessions, cache, authentication, middleware and routing.
+Bhitti installs a framework exception handler around application execution. Development and production output differ according to `APP_DEBUG`.
 
-## Successful request overhead
+## Development
 
-The handler only registers callbacks. Stack formatting, logging and rendering run only when an error occurs. The shutdown callback performs a small `error_get_last()` check.
-
-## PHP errors
-
-Reportable PHP errors are converted to `ErrorException`. Errors suppressed by the current `error_reporting()` mask are not converted.
-
-## Uncaught exceptions
-
-The handler:
-
-1. prevents recursive handling
-2. clears output buffers
-3. writes the full exception to PHP's error log
-4. renders CLI, API or web output
-5. exits with code 1 in CLI mode
-
-## Production output
-
-With debug disabled:
-
-Web:
-
-```html
-<h1>Internal Server Error</h1>
+```dotenv
+APP_DEBUG=true
 ```
 
-API:
+Use development mode locally when you need detailed exception information.
 
-```json
-{"error":"Internal Server Error"}
+## Production
+
+```dotenv
+APP_DEBUG=false
 ```
 
-CLI:
+Do not expose stack traces or sensitive configuration to end users.
 
-```text
-Internal Server Error
-```
+## Database exceptions
 
-## Debug output
+PDO is configured to throw database errors. Let `PDOException` describe database/runtime SQL failures rather than wrapping every execute call in a new generic exception.
 
-With debug enabled, API and HTML responses include exception details and a stack trace. Never enable debug output on a public production server.
+Query Builder misuse is validated before SQL reaches PDO where needed—for example invalid identifiers/operators, negative limits, empty writes, and `UPDATE`/`DELETE` without a `WHERE` condition.
 
-## Fatal errors
+## Boot errors
 
-The shutdown handler checks fatal error types and converts them to the same central response flow when possible.
-
-## Logging
-
-The built-in handler uses:
-
-```php
-error_log((string) $exception);
-```
-
-Configure PHP's `error_log` destination in production. A future logger service can be added without changing the normal exception flow.
-
-## Avoid duplicate handling
-
-Do not wrap every controller or middleware in a broad `try/catch` only to produce a generic 500. Catch exceptions locally only when the application can recover or return a meaningful domain response.
+Application boot configuration should fail visibly rather than silently swallowing exceptions. The current starter `AuthResolver` registration does not hide resolver registration errors.

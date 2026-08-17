@@ -1,46 +1,36 @@
+---
+layout: default
+title: Authentication and Roles
+---
+
 # Authentication and Roles
+
+The starter application includes a small session-based authentication layer under `app/Supports/` and middleware under `app/Middlewares/`. These are application components built on Bhitti's session, request context, database, and middleware APIs.
 
 ## User resolver
 
-`bootstrap/auth.php` registers how an authenticated user ID is converted into a user object:
-
-```php
-Auth::setResolver(function (int $id) {
-    return db()->table('users')
-        ->select('id', 'name', 'email', 'username')
-        ->find($id);
-});
-```
-
-Adjust selected columns to match your user schema and application needs.
+`bootstrap/services.php` registers the auth resolver through `AuthResolver`. The resolver maps an authenticated user ID to the application user object/row.
 
 ## Login
 
 ```php
+use App\Supports\Auth;
+
 Auth::login((int) $user->id);
 ```
 
-This regenerates the session ID, stores the authenticated user ID and clears request-level user cache.
+Login regenerates the session ID and stores `auth_user_id`.
 
-## Authentication checks
+## Auth state
 
 ```php
 Auth::check();
 Auth::id();
 Auth::user();
+Auth::viaRemember();
 ```
 
-The resolved user is cached in request-scoped context, so repeated `Auth::user()` calls do not repeatedly query the database.
-
-## Stateless authentication state
-
-Bearer middleware uses:
-
-```php
-Auth::once($userId, $resolvedUser);
-```
-
-This sets request-level authentication without writing a session.
+Resolved auth state is cached in `RequestContext` for the current request.
 
 ## Logout
 
@@ -48,62 +38,53 @@ This sets request-level authentication without writing a session.
 Auth::logout();
 ```
 
-This destroys the session, removes the remember cookie and clears request-level state.
+Logout destroys the session, removes the remember-token cookie, and clears request-scoped auth state.
 
-## Remember-me authentication
+The starter application's logout route is `POST /logout` and is protected by `Authenticated` middleware.
 
-The included middleware:
+## Route protection
 
-1. Reads the remember cookie.
-2. Hashes the raw token.
-3. Finds a non-expired database token.
-4. Compares the user agent.
-5. Regenerates the session.
-6. Restores the user ID.
-7. Rotates the token.
+```php
+$route->get('/dashboard', [
+    DashboardController::class,
+    'index',
+    [Authenticated::class],
+]);
+```
 
-Store only token hashes in the database. Treat remember tokens as credentials.
+Use `Guest` for routes that should be unavailable to authenticated users.
 
 ## Roles
 
-Get current roles:
+The starter application stores roles in `roles` and assignments in `user_roles`. Role results are cached for the current request.
 
 ```php
-$roles = Role::userRoles();
-```
+use App\Supports\Role;
 
-Check one role:
-
-```php
-if (Role::has('admin')) {
-    // ...
-}
-```
-
-Check any or all:
-
-```php
+Role::has('admin');
 Role::any(['admin', 'editor']);
 Role::all(['admin', 'verified']);
+Role::userRoles();
 ```
 
-Assign or remove:
+Assign/remove:
 
 ```php
-Role::assign($userId, 'user');
-Role::remove($userId, 'user');
+Role::assign($userId, 'admin');
+Role::remove($userId, 'admin');
 ```
 
-Role lookups are cached for the current request and invalidated when roles are assigned or removed.
+The current `user_roles` migration uses a composite unique constraint to prevent duplicate user/role pairs.
 
-## Middleware
+## Role middleware
 
 ```php
-[Authenticated::class]
+$route->get('/admin', [
+    AdminController::class,
+    'index',
+    [
+        Authenticated::class,
+        [RoleMiddleware::class, ['admin']],
+    ],
+]);
 ```
-
-```php
-[RoleMiddleware::class, ['admin', 'editor']]
-```
-
-A missing authentication returns 401. An authenticated user without the required role receives 403.

@@ -1,109 +1,116 @@
+---
+layout: default
+title: Views and Helpers
+---
+
 # Views and Helpers
 
-## Views
+Bhitti views are plain PHP templates stored under `resources/views/` with the `.view.php` extension.
 
-Views are plain PHP files under `app/Views`.
+## Render a view
 
 ```php
-view('home', [
-    'title' => 'Home',
-    'users' => $users,
+return view('welcome', [
+    'title' => 'Bhitti',
 ]);
 ```
 
-Dot notation maps to folders:
+Dot notation maps to directories:
 
 ```php
-view('auth.login', ['title' => 'Login']);
+view('auth.login');
 ```
 
-This loads:
+loads:
 
 ```text
-app/Views/auth/login.php
+resources/views/auth/login.view.php
 ```
+
+`view()` returns the rendered string rather than echoing it directly.
 
 ## Escaping output
 
+Use `e()` for dynamic text:
+
 ```php
-<?= e($user->name) ?>
+<h1><?= e($title) ?></h1>
 ```
 
-Render trusted HTML explicitly:
+Inside a view object you may also use:
 
 ```php
-<?= raw($trustedHtml) ?>
+<?= $this->e($title) ?>
 ```
 
-Do not pass untrusted user input to `raw()`.
+Only output unescaped HTML when the value is already trusted by your application.
 
-## View paths
+## Layouts and sections
+
+A child view can select a layout and define sections:
 
 ```php
-$path = view_path('auth.login');
+<?php $this->layout('layout.main'); ?>
+
+<?php $this->start('content'); ?>
+    <h1><?= $this->e($title) ?></h1>
+<?php $this->end(); ?>
 ```
 
-## CSRF fields
+Then `resources/views/layout/main.view.php` can render the section:
 
 ```php
-<form method="post">
-    <?= csrf_field() ?>
+<!doctype html>
+<html>
+<body>
+    <main>
+        <?= $this->section('content') ?>
+    </main>
+</body>
+</html>
+```
+
+## CSRF field
+
+For web forms protected by the CSRF middleware:
+
+```php
+<form method="post" action="/profile">
+    <?= $this->csrfField() ?>
+    <button type="submit">Save</button>
 </form>
 ```
 
-Get only the token:
+## Framework helpers
+
+Common framework helpers include:
 
 ```php
-$token = csrf_token();
-```
-
-CSRF validation is handled by middleware; manual `verify_csrf()` calls are not required.
-
-## Core helpers
-
-```php
+cache();
+db();
+session();
+env();
+config();
 request();
 response();
-db();
-cache();
-session();
-config();
-env();
+view();
+e();
+csrf_token();
+is_ajax();
+is_api_request();
+pr();
+dd();
 ```
 
-Role helpers:
+## Application helpers
+
+The starter application defines application-specific helpers separately in `app/Helpers/common.php`, including:
 
 ```php
-if (role('admin')) {
-    // ...
-}
-
-if (roles(['admin', 'editor'])) {
-    // User has any listed role.
-}
+auth();
+role();
+roles();
+flash();
 ```
 
-## Debug helpers
-
-```php
-pr($value);
-dd($value);
-```
-
-Do not leave `dd()` in production code.
-
-## Legacy flash helpers
-
-`flash()`, `back()` and `show_flash()` are available. New code should generally prefer response redirects:
-
-```php
-return response()->redirect('/')->with(['success' => 'Saved']);
-```
-
-## Text and time helpers
-
-The starter includes helpers such as `textShorten()`, `number_formatting()`, `dateFormat()`, `time_ago()` and `duration()`.
-
-## Image helper
-
-`App\Supports\ImageHelper::resize()` uses GD to create a resized image resource. Verify the input format and GD extension before using it in upload workflows.
+Keeping application helpers outside the framework package preserves the boundary between reusable framework behavior and project-specific behavior.

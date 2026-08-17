@@ -1,95 +1,84 @@
+---
+layout: default
+title: Deployment
+---
+
 # Deployment
 
-## Production checklist
+Bhitti is designed for normal PHP-FPM deployments while keeping broad PHP hosting compatibility. The deployment platform is an application-owner decision; Bhitti does not require a particular web server or cloud provider.
 
-- Set `DEBUG_MODE=false`.
-- Point the document root to `public/`.
-- Configure HTTPS.
-- Set the correct `BASE_URL`.
-- Configure database credentials.
-- Choose available cache and rate-limit drivers.
-- Make required storage directories writable.
-- Import or migrate the database schema.
-- Build Composer's optimized autoloader.
-- Rebuild configuration and route caches on the target server.
-- Configure PHP error logging.
-- Ensure `.env` and source directories are not public.
+## Document root
+
+Point the public web root at:
+
+```text
+/path/to/project/public
+```
+
+Do not expose `.env`, `config/`, `storage/`, or application source files as public web content.
+
+## Production environment
+
+```dotenv
+APP_DEBUG=false
+BASE_URL=https://example.com
+SESSION_SECURE=true
+```
+
+Set database/cache/session credentials through the environment.
 
 ## Composer
+
+The current application Composer configuration resolves the framework from the sibling path `../bhitti-framework`. Ensure that source is available to Composer during deployment, or adjust your Composer repository strategy for your release process.
+
+Then install production dependencies and optimize autoloading:
 
 ```bash
 composer install --no-dev --optimize-autoloader
 ```
 
-## Cache commands
+## Database
+
+Run migrations explicitly:
 
 ```bash
-php art cache:config
-php art cache:route
+php run migrate --force
 ```
 
-## Apache
+Run seeders only when the deployment requires the registered seed data:
 
-Set the virtual host document root to the project's `public` directory. The archive includes a `public/.htaccess` rewrite file.
-
-## Nginx example
-
-```nginx
-server {
-    listen 80;
-    server_name example.com;
-    root /var/www/bhitti/public;
-    index index.php;
-
-    location / {
-        try_files $uri $uri/ /index.php?$query_string;
-    }
-
-    location ~ \.php$ {
-        include fastcgi_params;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
-    }
-
-    location ~ /\. {
-        deny all;
-    }
-}
+```bash
+php run db:seed
 ```
 
-Adjust the PHP-FPM socket to the installed version.
+## Build caches
 
-## Reverse proxy
+```bash
+php run config:cache
+php run route:cache
+```
 
-When an upstream proxy terminates HTTPS, add the proxy's exact IP to `TRUSTED_PROXIES`. Forwarded protocol, host and client IP headers are ignored for untrusted remote addresses.
+Generated files:
 
-## Driver guidance
+```text
+storage/cache/config.cache.php
+storage/cache/route.cache.php
+```
 
-| Deployment | Cache | Rate limiting |
-|---|---|---|
-| Basic single server | File | File |
-| Supported Linux single server | APCu | APCu or File |
-| Multiple application servers | Redis or Memcached | Redis preferred |
-| Containers with shared services | Redis or Memcached | Redis preferred |
+Ensure the PHP process can write the required `storage/cache` directories.
 
-## Permissions
+## PHP-FPM and persistent services
 
-Grant write access only where needed. Avoid broad `0777` permissions. The PHP worker needs access to runtime cache paths, not ownership of the entire application source.
+Redis connections are lazy and can use persistent PHP-FPM sockets. Memcached uses a shared request-local manager and a configured persistent ID. PDO persistence is opt-in rather than forced.
 
-## Generated files
+Measure your own workload before changing pool sizes, database persistence, Redis profiles, or cache drivers.
 
-Generate configuration and routes on the target environment. Never deploy caches from a developer machine because configuration cache may contain credentials and absolute paths.
+## Reverse proxies/load balancers
 
-## Health verification
+When running behind trusted infrastructure, configure exact proxy IPs or CIDR ranges:
 
-After deployment, verify:
+```dotenv
+TRUSTED_PROXIES=10.0.0.0/8,172.16.0.0/12
+```
 
-- a web route returns 200
-- an API route returns JSON
-- 404 and 405 behavior
-- session login and logout
-- CSRF rejection and acceptance
-- database connectivity
-- cache read/write
-- rate-limit rejection
-- exception logs and generic production 500 output
+Do not trust public/uncontrolled address ranges.

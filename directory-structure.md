@@ -1,76 +1,79 @@
+---
+layout: default
+title: Directory Structure
+---
+
 # Directory Structure
+
+A current Bhitti application is intentionally small:
 
 ```text
 app/
-├── Controllers/
-├── Helpers/
-├── Middlewares/
-├── Models/
-├── Supports/
-├── Systems/
-├── Validation/
-└── Views/
+  Controllers/
+  Helpers/
+  Middlewares/
+  Models/
+  Supports/
 bootstrap/
+  app.php
+  services.php
 config/
+  app.php
+  cache.php
+  commands.php
+  container.php
+  database.php
+  middleware.php
+  rate_limit.php
+  routes.php
+  session.php
 database/
+  migrations/
+  seeders/
 public/
+  index.php
+resources/
+  views/
 storage/
-bin/
+  cache/
 vendor/
+.env
+run
 ```
 
-## `app/Controllers`
+## `app/`
 
-HTTP controllers. Controller methods may return a `Response`, return a redirect response, or render a view.
+Application code lives here. Framework internals are provided by the `sayedsahin/bhitti-framework` Composer package rather than being copied into the application.
 
-## `app/Helpers`
+## `bootstrap/`
 
-Globally autoloaded helper functions such as `request()`, `response()`, `db()`, `cache()`, `config()`, `view()` and `e()`.
+`bootstrap/app.php` defines `ROOT_PATH`, `APP_PATH`, and `STORAGE_PATH`, loads Composer, and returns the application instance. `bootstrap/services.php` contains application-level boot registrations such as the auth resolver.
 
-## `app/Middlewares`
+## `config/`
 
-Application middleware implementations such as CSRF protection, authentication, security headers and rate limiting.
+Configuration is plain PHP. `routes.php` and `commands.php` are runtime definitions and are intentionally excluded from configuration caching.
 
-## `app/Models`
+## `database/`
 
-Query Builder subclasses that define a table and may contain application-specific query methods.
+- `migrations/` contains schema changes.
+- `seeders/` contains closure-based seed files plus `database.seeder.php`, which defines the default seeding order.
 
-## `app/Supports`
+## `resources/views/`
 
-Application services that sit above the framework systems, including authentication, roles, rate limiting and request-scoped context.
+Views use the `.view.php` extension. Dot notation maps to subdirectories: `view('auth.login')` loads `resources/views/auth/login.view.php`.
 
-## `app/Systems`
+## `public/`
 
-Core framework components: container, database, Query Builder, HTTP request/response, sessions, cache, configuration, middleware and exception handling.
+This is the web document root. Requests enter through `public/index.php`.
 
-## `app/Validation`
+## `storage/cache/`
 
-Validator and validation exception classes.
+Generated configuration/route cache files and file-backed cache/rate-limit data live here.
 
-## `app/Views`
+## `run`
 
-Plain PHP templates. Dot notation maps to nested directories.
+The root `run` script is Bhitti's CLI entry point:
 
-## `bootstrap`
-
-Small bootstrap scripts for configuration, sessions, cache, authentication, the container and routing.
-
-## `config`
-
-Application configuration. Each cacheable configuration file returns an array. `routes.php` and `path.php` are loaded separately.
-
-## `database`
-
-Database schema or backup files.
-
-## `public`
-
-The only directory that should be publicly accessible. It contains `index.php`, public assets and web-server rewrite rules.
-
-## `storage`
-
-Generated cache and runtime files. Generated `config.php` and `route.cache` must not be distributed as release artifacts.
-
-## `bin`
-
-Command-line scripts for rebuilding configuration and route caches.
+```bash
+php run
+```

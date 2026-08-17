@@ -1,87 +1,84 @@
+---
+layout: default
+title: Sessions and Cookies
+---
+
 # Sessions and Cookies
 
-Sessions are available for web requests. API requests skip session bootstrap by default.
+Bhitti supports `native`, `redis`, `memcached`, and `null` session drivers. Web sessions are configured only after a route is found; API routes do not configure PHP sessions by default.
 
 ## Configuration
 
-```php
-return [
-    'driver' => env('SESSION_DRIVER', 'native'),
-    'lifetime' => env('SESSION_LIFETIME', 7200),
-    'secure' => env('SESSION_SECURE', true),
-    'samesite' => env('SESSION_SAMESITE', 'Lax'),
-];
+```dotenv
+SESSION_ENABLED=true
+SESSION_DRIVER=native
+SESSION_NAME=BHITTISESSID
+SESSION_LIFETIME=7200
+SESSION_SECURE=true
+SESSION_HTTP_ONLY=true
+SESSION_SAMESITE=Lax
 ```
+
+Remote sessions also use:
+
+```dotenv
+SESSION_PREFIX=bhitti:session:
+SESSION_LOCK=true
+SESSION_LOCK_TTL=10
+SESSION_LOCK_WAIT=2
+SESSION_LOCK_SLEEP=20000
+```
+
+Redis sessions can select a named Redis profile:
+
+```dotenv
+SESSION_REDIS_CONNECTION=default
+```
+
+When `SESSION_ENABLED=false`, Bhitti installs the null driver for matched web routes so session calls remain safe without persistent session state.
 
 ## Session API
 
-Static facade:
-
 ```php
-use App\Systems\Session\Session;
+use Bhitti\Session\Session;
 
-Session::set('key', $value);
-$value = Session::get('key', $default);
-Session::forget('key');
-Session::regenerate();
+$value = Session::get('cart', []);
+Session::set('cart', $cart);
+Session::forget('cart');
 Session::flush();
+Session::regenerate();
 Session::destroy();
 Session::close();
 ```
 
-Helper proxy:
+The `session()` helper provides access to the configured session interface where preferred.
 
-```php
-session()->set('key', $value);
-$value = session()->get('key');
-```
+## Lazy read/write behavior
 
-## Native session security
+Remote session drivers distinguish read access from write access. Read-only access can load and close the PHP session quickly, avoiding a long exclusive session lock. Write access obtains a lock and verifies ownership before remote session state is changed.
 
-The native driver enables:
+This is important for concurrent PHP-FPM requests from the same browser session.
 
-- strict mode
-- cookie-only sessions
-- HttpOnly cookies
-- configured SameSite
-- Secure cookies only when configured and the request is HTTPS
-- configured garbage-collection lifetime
+## Redis locking
 
-Call `Session::regenerate()` after changing authentication state. `Auth::login()` already does this.
+Redis sessions use an atomic `SET ... NX PX` lock. Ownership refresh and release use Redis Lua scripts so the token check and TTL/delete operation are atomic.
 
-## Session locking
+## Memcached locking
 
-PHP native file sessions can hold a lock for the duration of a request. After all session writes are complete, long-running work may call:
+Memcached sessions use `add()` for lock acquisition and CAS when refreshing an owned lock before writing. Release verifies the owner token before deleting the lock.
 
-```php
-Session::close();
-```
+## PHP 8.4 session handler registration
 
-Do not attempt to write session data after closing it unless the driver is restarted appropriately.
+Redis and Memcached sessions use an object handler implementing PHP's session handler interfaces and register it with the two-argument `session_set_save_handler($handler, true)` form. This avoids the deprecated multi-callback registration signature in PHP 8.4 while retaining session ID validation and lazy timestamp updates.
 
 ## Cookies
 
 ```php
-use App\Systems\Session\Cookie;
+use Bhitti\Session\Cookie;
 
-Cookie::set('theme', 'dark', 86400);
+Cookie::set('theme', 'dark', 3600);
 $value = Cookie::get('theme');
 Cookie::forget('theme');
 ```
 
-Cookies are set as HttpOnly, use `/` as the path, and derive the Secure flag from the request.
-
-## Remember token generation
-
-```php
-$token = RememberToken::generate();
-```
-
-It returns:
-
-```php
-[
-    'raw' => 'token sent to the cookie',
-    'hash' => 'SHA-256 value stored in the database',
-]
-```
+Keep sensitive cookies secure and HTTP-only where applicable.

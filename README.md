@@ -1,15 +1,18 @@
 # Bhitti Documentation
 
-This repository contains the official documentation for the Bhitti PHP framework.
+This directory contains the current developer documentation for the Bhitti PHP framework and starter application.
 
-https://sayedsahin.github.io/bhitti/
+The documentation is aligned with the current Bhitti application and `sayedsahin/bhitti-framework` code after the framework `v0.1.0` baseline.
 
-## Documentation Website
+## Local Jekyll preview
 
-Visit the published documentation:
+This documentation keeps the existing Jekyll structure (`_config.yml`, `_layouts/`, `_data/navigation.yml`, `assets/`). Publish it with GitHub Pages or your normal Jekyll workflow.
 
-https://sayedsahin.github.io/bhitti-doc/
+## Documentation rules
 
-## Framework Repository
-
-The Bhitti framework source code is maintained in a separate repository.
+- Current source code is the API source of truth.
+- Use `php run` for CLI examples.
+- Use `resources/views/*.view.php` for views.
+- Keep kernel middleware stateless; session-aware middleware belongs to matched routes.
+- Document raw SQL APIs as developer-controlled escape hatches.
+- Do not document removed migration checksum/`--allow-modified` behavior as current functionality.

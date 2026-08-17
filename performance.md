@@ -1,75 +1,59 @@
+---
+layout: default
+title: Performance
+---
+
 # Performance
 
-Bhitti's performance strategy is architectural rather than based on unsafe micro-optimizations.
+Bhitti's performance approach is architectural: avoid work that the current request does not need, keep abstractions small, and reuse external connections where appropriate.
 
-## Low-overhead choices
+## Route first, session later
 
-- Cached FastRoute dispatcher
-- Cached and memoized configuration
-- Direct middleware loop
-- Reflection metadata cache in the container
-- One request object per request
-- Lazy request-header lookup
-- One-time JSON body decoding
-- One PDO connection per request
-- Fresh Query Builder per `db()` call
-- Lazy cache driver initialization
-- Direct `PDO::FETCH_COLUMN` for `pluck()` and `value()`
-- Request-scoped authentication and role caches
-- Central exception processing only on errors
+Kernel-level stateless middleware runs before routing. Session-aware route middleware runs only when a route is found. As a result, 404/405 traffic does not initialize a web session or route-level middleware stack.
 
-## Main real-world costs
+## Lazy cache resolution
 
-In most applications, latency is dominated by:
+The cache driver is resolved on the first cache operation rather than during every application boot.
 
-- database connection and queries
-- Redis or Memcached network round trips
-- session file locks
-- file cache and file rate-limit I/O
-- rendering and application logic
-- external APIs
+## Session concurrency
 
-Router, response and simple middleware overhead is usually much smaller.
+Redis/Memcached sessions separate read and write access so read-only session access can close quickly. Write paths use ownership-aware locks to reduce lost updates when multiple PHP-FPM requests share the same browser session.
 
-## Query guidance
+## Shared Redis connections
 
-- Select only needed columns.
-- Add indexes for WHERE, JOIN and token lookup columns.
-- Use `exists()` instead of retrieving rows only to test existence.
-- Use `pluck()` or `value()` for scalar data.
-- Prevent N+1 query patterns in application code.
-- Use transactions for related writes.
+Cache, session, and rate limiting can map to the same named Redis profile. The request-local manager reuses one Redis object and supports persistent PHP-FPM connections.
 
-## Cache guidance
+## Shared Memcached connection
 
-- Cache expensive, repeatable work rather than cheap values.
-- Include identity and scope in keys: `user:{$id}` rather than `user`.
-- Use finite TTLs for data that changes.
-- Remember that `remember()` can compute twice under concurrent misses.
-- Avoid network caching when a database query is already cheaper than the network round trip.
+Memcached connection creation/options/server normalization are centralized, and cache/session/rate limiting reuse the same request-local object.
 
-## Session guidance
+## Production caches
 
-Close native sessions before long-running work when no more writes are needed:
+Use:
 
-```php
-Session::close();
+```bash
+php run config:cache
+php run route:cache
 ```
 
-## Driver count
+This removes repeated configuration loading and route compilation from the production hot path.
 
-Having several driver classes does not slow requests. Composer loads only referenced classes, the cache resolver instantiates only the selected cache driver, and the rate limiter resolves only its configured driver. The main cost is maintenance and testing, not runtime.
+## Query Builder
 
-## Benchmarking
+Values use prepared PDO bindings; SQL state is reset between terminal operations. Use normal builder methods where possible and raw SQL when the database can express an operation more efficiently than the small builder API.
 
-Benchmark real PHP-FPM endpoints, not only CLI method calls. Include:
+## Benchmark the whole stack
 
-- empty HTML route
-- JSON route
-- session route
-- database SELECT
-- authenticated API route
-- cache hit and miss
-- rate-limited route
+For meaningful results, benchmark the deployed path rather than isolated PHP method calls:
 
-Measure requests per second, p50/p95 latency, memory and error rate under realistic concurrency.
+```text
+Web server / reverse proxy
+  ↓
+PHP-FPM + OPcache
+  ↓
+Bhitti
+  ↓
+Database / Redis / Memcached as used
+```
+
+Useful request profiles include a plain route, a rendered view, a 404, a session read, a session write, one DB query, and one cache hit. Track throughput plus p50/p95/p99 latency and resource usage.
