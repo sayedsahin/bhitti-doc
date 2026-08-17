@@ -51,7 +51,7 @@ The helper converts common scalar strings:
 
 ## Configuration cache
 
-At boot, Pkathamo uses `storage/cache/config.php` when it exists. Otherwise it loads `.env`, reads config files, writes the cache, then loads it.
+At boot, Bhitti uses `storage/cache/config.php` when it exists. Otherwise it loads `.env`, reads config files, writes the cache, then loads it.
 
 After changing `.env` or a cached config file:
 

@@ -388,7 +388,7 @@ $users = User::query()
 
 ## Model Behavior
 
-Pkathamo models provide:
+Bhitti models provide:
 
 - a fixed database table
 - optional default selected columns
@@ -397,7 +397,7 @@ Pkathamo models provide:
 - method chaining
 - access to the complete Query Builder API
 
-Pkathamo models do not provide:
+Bhitti models do not provide:
 
 - ORM entity lifecycle
 - dirty attribute tracking

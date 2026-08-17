@@ -1,6 +1,6 @@
 # Performance
 
-Pkathamo's performance strategy is architectural rather than based on unsafe micro-optimizations.
+Bhitti's performance strategy is architectural rather than based on unsafe micro-optimizations.
 
 ## Low-overhead choices
 

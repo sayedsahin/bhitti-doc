@@ -49,7 +49,7 @@ A controller that renders a view may return `void`, because `view()` includes th
 
 ## Web and API Request Detection
 
-Pkathamo identifies API requests by their normalized URL path.
+Bhitti identifies API requests by their normalized URL path.
 
 A request is considered an API request when its path is exactly `/api` or begins with `/api/`.
 

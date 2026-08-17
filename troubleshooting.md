@@ -100,7 +100,7 @@ For complete raw SQL, do not mix positional and named parameters in one statemen
 
 ## UPDATE or DELETE is forbidden
 
-Pkathamo requires a WHERE condition for builder-generated update and delete operations.
+Bhitti requires a WHERE condition for builder-generated update and delete operations.
 
 ```php
 ->where('id', $id)->update($data)

@@ -1,15 +1,15 @@
-# Pkathamo Documentation
+# Bhitti Documentation
 
-This repository contains the official documentation for the Pkathamo PHP framework.
+This repository contains the official documentation for the Bhitti PHP framework.
 
-https://sayedsahin.github.io/pkathamo/
+https://sayedsahin.github.io/bhitti/
 
 ## Documentation Website
 
 Visit the published documentation:
 
-https://sayedsahin.github.io/pkathamo-doc/
+https://sayedsahin.github.io/bhitti-doc/
 
 ## Framework Repository
 
-The Pkathamo framework source code is maintained in a separate repository.
+The Bhitti framework source code is maintained in a separate repository.

@@ -1,6 +1,6 @@
 # Database
 
-Pkathamo uses PDO and supports multiple named database connections.
+Bhitti uses PDO and supports multiple named database connections.
 
 The `Database` service is configured as a container singleton. PDO connections are created lazily and cached by connection name, so each configured connection is opened only when it is first requested.
 
@@ -199,7 +199,7 @@ sqlite
 
 ## Transactions
 
-Pkathamo provides connection-specific transaction methods through the `db()` helper.
+Bhitti provides connection-specific transaction methods through the `db()` helper.
 
 The recommended approach is the callback-based `transaction()` method. It starts a transaction, commits when the callback completes successfully, and rolls back when the callback throws an exception.
 
@@ -347,7 +347,7 @@ DB_CONNECTION=mysql
 
 MYSQL_DB_HOST=127.0.0.1
 MYSQL_DB_PORT=3306
-MYSQL_DB_NAME=pkathamo
+MYSQL_DB_NAME=bhitti
 MYSQL_DB_USERNAME=root
 MYSQL_DB_PASSWORD=
 MYSQL_DB_CHARSET=utf8mb4
@@ -359,7 +359,7 @@ Generic fallback variables are also supported:
 ```dotenv
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_NAME=pkathamo
+DB_NAME=bhitti
 DB_USERNAME=root
 DB_PASSWORD=
 DB_PERSISTENT=false
@@ -374,7 +374,7 @@ DB_CONNECTION=pgsql
 
 PGSQL_DB_HOST=127.0.0.1
 PGSQL_DB_PORT=5432
-PGSQL_DB_NAME=pkathamo
+PGSQL_DB_NAME=bhitti
 PGSQL_DB_USERNAME=postgres
 PGSQL_DB_PASSWORD=
 PGSQL_DB_PERSISTENT=false
@@ -440,7 +440,7 @@ EXTRA
 
 ## PDO Configuration
 
-Pkathamo configures PDO with exception-based error handling:
+Bhitti configures PDO with exception-based error handling:
 
 ```php
 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION

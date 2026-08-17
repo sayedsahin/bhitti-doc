@@ -38,7 +38,7 @@ Set the virtual host document root to the project's `public` directory. The arch
 server {
     listen 80;
     server_name example.com;
-    root /var/www/pkathamo/public;
+    root /var/www/bhitti/public;
     index index.php;
 
     location / {

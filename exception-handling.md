@@ -1,6 +1,6 @@
 # Exception Handling
 
-Pkathamo registers a central exception, error and shutdown handler after configuration is loaded and before sessions, cache, authentication, middleware and routing.
+Bhitti registers a central exception, error and shutdown handler after configuration is loaded and before sessions, cache, authentication, middleware and routing.
 
 ## Successful request overhead
 
