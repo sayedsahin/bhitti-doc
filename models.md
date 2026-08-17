@@ -51,3 +51,18 @@ $user = User::query()
 ## Scope of the model layer
 
 Bhitti models intentionally do not provide automatic relationships, dirty tracking, events, or entity persistence. Use the Query Builder directly when that is clearer.
+
+## Global DB model
+
+For queries that do not need an application model, use Bhitti's global `DB` model:
+
+```php
+use Bhitti\Database\DB;
+
+$users = DB::query()
+    ->table('users')
+    ->select('id', 'name')
+    ->get();
+```
+
+`DB::query()` returns fresh Query Builder state. Application models such as `User::query()` are useful when you want model-specific defaults; `DB::query()` is the general-purpose model.

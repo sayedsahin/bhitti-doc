@@ -97,6 +97,8 @@ Route cache:
 php run route:cache
 ```
 
+Rebuild the route cache after changing route definitions or controller class/method `#[Middleware]` attributes, because controller middleware metadata is collected when routes are registered.
+
 Clear application/generated caches:
 
 ```bash

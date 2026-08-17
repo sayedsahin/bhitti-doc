@@ -36,6 +36,18 @@ $users = db('sqlite')
 
 Each `db()` call creates fresh Query Builder state while Bhitti reuses the underlying database connection within the request.
 
+You can also use the framework's global `DB` model:
+
+```php
+use Bhitti\Database\DB;
+
+$users = DB::query()
+    ->table('users')
+    ->get();
+```
+
+`DB::query('sqlite')` starts the same global builder on a named connection. `DB` extends `QueryBuilder` and also exposes transaction methods.
+
 ## Transactions
 
 The database layer exposes transactions through the configured connection:

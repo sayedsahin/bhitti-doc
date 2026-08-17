@@ -40,12 +40,14 @@ FastRoute resolves the request.
 
 For a matched **web** route, the configured session driver is registered. If sessions are disabled, Bhitti uses the null session driver. API routes do not configure PHP sessions.
 
-Bhitti then merges:
+Bhitti then executes the matched-route middleware in this order:
 
-1. route-level global middleware from `config/middleware.php`, and
-2. route/controller middleware collected with the route.
+1. route-level global middleware from `config/middleware.php`,
+2. route-specific middleware from the route definition,
+3. controller class-level `#[Middleware]` attributes,
+4. controller method-level `#[Middleware]` attributes.
 
-Only after middleware succeeds is the controller resolved from the container.
+Controller attributes are collected during route registration and stored with the prepared route handler, so they are also part of the route cache. Only after middleware succeeds is the controller resolved from the container.
 
 ## 6. Controller arguments
 

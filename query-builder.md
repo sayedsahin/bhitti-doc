@@ -7,6 +7,35 @@ title: Query Builder
 
 Bhitti's Query Builder keeps SQL construction small and explicit while binding values through PDO.
 
+## Global DB model
+
+`Bhitti\Database\DB` is the framework's global database model. Because it extends `QueryBuilder`, `DB::query()` starts a fresh Query Builder without creating an application model:
+
+```php
+use Bhitti\Database\DB;
+
+$users = DB::query()
+    ->table('users')
+    ->where('status', 'active')
+    ->get();
+```
+
+Use a named database connection when needed:
+
+```php
+$users = DB::query('sqlite')
+    ->table('users')
+    ->get();
+```
+
+`db()` is the shorter helper for the same general-purpose database/query-builder workflow:
+
+```php
+$users = db()->table('users')->get();
+```
+
+Use an application model such as `User::query()` when you want reusable defaults like a table, select list, or connection. Use `DB::query()`/`db()` when a global builder is clearer.
+
 ## Select
 
 ```php

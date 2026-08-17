@@ -92,4 +92,54 @@ Bhitti resolves middleware through the container and passes supplied arguments w
 
 ## Controller middleware attributes
 
-Bhitti also supports its `#[Middleware(...)]` attribute on controllers/methods. These entries are collected during route registration and executed in the same matched-route middleware list.
+Bhitti supports repeatable PHP attributes for controller-level middleware:
+
+```php
+use App\Middlewares\RoleMiddleware;
+use Bhitti\Http\Middleware\Attributes\Middleware;
+
+#[Middleware(RoleMiddleware::class, ['user'])]
+final class ProfileController extends Controller
+{
+    // Every routed action in this controller receives RoleMiddleware.
+}
+```
+
+Method-level middleware applies only to the decorated action:
+
+```php
+use App\Middlewares\Guest;
+use Bhitti\Http\Middleware\Attributes\Middleware;
+
+#[Middleware(Guest::class)]
+public function registrationProcess(): Response
+{
+    // ...
+}
+```
+
+The attribute is repeatable:
+
+```php
+#[Middleware(Authenticated::class)]
+#[Middleware(RoleMiddleware::class, ['admin'])]
+public function dashboard(): string
+{
+    return view('admin.dashboard');
+}
+```
+
+Middleware arguments are passed as the attribute's second argument:
+
+```php
+#[Middleware(RoleMiddleware::class, ['admin'])]
+```
+
+For a matched route, execution order is:
+
+1. route-level global middleware,
+2. route-specific middleware,
+3. controller class attributes,
+4. controller method attributes.
+
+Controller attributes are discovered during route registration and stored with the prepared route handler. They are therefore included in the route cache. After changing an attribute, rebuild the cache with `php run route:cache`.
