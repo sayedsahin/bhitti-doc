@@ -25,7 +25,6 @@ Optional extensions:
 
 ```bash
 git clone https://github.com/sayedsahin/bhitti.git
-git clone https://github.com/sayedsahin/bhitti-framework.git
 cd bhitti
 composer install
 cp .env.example .env
