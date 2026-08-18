@@ -25,12 +25,9 @@ Example:
 
 ```bash
 git clone https://github.com/sayedsahin/bhitti.git
-git clone https://github.com/sayedsahin/bhitti-framework.git
 cd bhitti
 composer install
 ```
-
-The application `composer.json` resolves `sayedsahin/bhitti-framework` from `../bhitti-framework` and symlinks it during development.
 
 Create the environment file:
 
