@@ -34,13 +34,14 @@ resources/views/auth/login.view.php
 Use `e()` for dynamic text:
 
 ```php
-<h1><?= e($title) ?></h1>
+<h1><?= $this->e($title) ?></h1>
 ```
 
-Inside a view object you may also use:
+Outside a view object you may use:
 
 ```php
-<?= $this->e($title) ?>
+// Supports/Message.php
+<?= e($title) ?>
 ```
 
 Only output unescaped HTML when the value is already trusted by your application.
