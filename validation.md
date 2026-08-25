@@ -40,6 +40,7 @@ $data = $validator->validated();
 ->email('email')
 ->min('password', 8)
 ->max('name', 100)
+->between('name', 8, 100)
 ->in('status', ['active', 'inactive'])
 ->confirmed('password')
 ->sometimes('company_name', $callback)
