@@ -11,17 +11,7 @@ Bhitti requires PHP **8.3+**, Composer, PDO, Mbstring, and the PDO extension for
 
 Install optional extensions only when you use their drivers: PhpRedis, Memcached, or APCu.
 
-## Get the application and framework
-
-The current Bhitti application uses the framework as a sibling Composer path repository. Keep this layout:
-
-```text
-projects/
-  bhitti/
-  bhitti-framework/
-```
-
-Example:
+## Clone skeleton app
 
 ```bash
 git clone https://github.com/sayedsahin/bhitti.git
