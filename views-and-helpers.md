@@ -41,6 +41,7 @@ Outside a view object you may use:
 
 ```php
 // Supports/Message.php
+
 <?= e($title) ?>
 ```
 
