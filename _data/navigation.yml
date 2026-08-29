@@ -23,13 +23,16 @@
       url: /request.html
     - title: Responses and Redirects
       url: /responses-and-redirects.html
-    - title: Views and Helpers
-      url: /views-and-helpers.html
     - title: Middleware
       url: /middleware.html
     - title: Validation
       url: /validation.html
-
+    - title: Native View Template
+      url: /native-view-template.html
+    - title: Twig View Template
+      url: /twig-view-template.html
+    - title: Helpers
+      url: /helpers.html
 - title: Database
   items:
     - title: Database

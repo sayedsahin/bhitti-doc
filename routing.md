@@ -88,7 +88,7 @@ final class ProfileController extends Controller
     #[Middleware(VerifiedEmail::class)]
     public function index(): string
     {
-        return view('profile.index');
+        return response()->view('profile.index');
     }
 }
 ```

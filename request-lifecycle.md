@@ -57,4 +57,4 @@ Route scalar parameters are validated against built-in parameter types captured 
 
 - A `Response` object is sent.
 - A string is emitted as the response body.
-- `view()` returns a string, so controllers can simply `return view(...)`.
+- Controller also return string. `return "string";`

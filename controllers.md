@@ -67,7 +67,7 @@ final class ProfileController extends Controller
 {
     public function index(): string
     {
-        return view('profile.index');
+        return response()->view('profile.index');
     }
 }
 ```
@@ -94,7 +94,7 @@ The attribute is repeatable, so multiple middleware may be declared:
 #[Middleware(RoleMiddleware::class, ['admin'])]
 public function dashboard(): string
 {
-    return view('admin.dashboard');
+    return response()->view('admin.dashboard');
 }
 ```
 
@@ -133,6 +133,6 @@ Bhitti does not inject the Request object into controller methods. Use `request(
 ```php
 public function index(): string
 {
-    return view('welcome', ['title' => 'Bhitti']);
+    return response()->view('welcome', ['title' => 'Bhitti']);
 }
 ```

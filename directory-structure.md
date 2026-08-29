@@ -60,7 +60,7 @@ Configuration is plain PHP. `routes.php` and `commands.php` are runtime definiti
 
 ## `resources/views/`
 
-Views use the `.view.php` extension. Dot notation maps to subdirectories: `view('auth.login')` loads `resources/views/auth/login.view.php`.
+Views use the `.view.php` extension. Dot notation maps to subdirectories: `response()->view('auth.login')` loads `resources/views/auth/login.view.php`.
 
 ## `public/`
 

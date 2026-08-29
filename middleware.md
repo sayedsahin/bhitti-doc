@@ -125,7 +125,7 @@ The attribute is repeatable:
 #[Middleware(RoleMiddleware::class, ['admin'])]
 public function dashboard(): string
 {
-    return view('admin.dashboard');
+    return response()->view('admin.dashboard');
 }
 ```
 
