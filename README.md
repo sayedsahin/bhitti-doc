@@ -15,4 +15,3 @@ This documentation keeps the existing Jekyll structure (`_config.yml`, `_layouts
 - Use `resources/views/*.view.php` for views.
 - Keep kernel middleware stateless; session-aware middleware belongs to matched routes.
 - Document raw SQL APIs as developer-controlled escape hatches.
-- Do not document removed migration checksum/`--allow-modified` behavior as current functionality.
