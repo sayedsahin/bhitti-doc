@@ -10,8 +10,8 @@
       url: /request-lifecycle.html
     - title: Configuration
       url: /configuration.html
-    - title: Upgrade from v0.1.0
-      url: /upgrade-from-v0.1.0.html
+    - title: Upgrade from v0.2.0
+      url: /upgrade-from-v0.2.0.html
 
 - title: HTTP
   items:
